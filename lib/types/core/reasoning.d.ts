@@ -29,6 +29,7 @@ export interface ReasoningModelRow {
     readonly modelName: string;
     readonly source: 'model' | 'override';
     readonly modelIndex?: number;
+    readonly models?: readonly ModelProfile[];
     readonly efforts?: ReasoningEfforts;
 }
 export interface SettingsPathOperation {
@@ -44,7 +45,7 @@ export declare function codexReasoningTemplate(): Exclude<ReasoningEfforts, fals
  */
 export declare function listReasoningModels(section: PiAiSection | undefined): ReasoningModelRow[];
 /**
- * 生成仅覆盖模型推理能力的路径操作，避免复制整个模型目录。
+ * 生成模型推理能力的最小安全写入；声明模型需整体保留并写回 `models` 数组。
  * @param row 要修改的模型。
  * @param efforts 新配置；`undefined` 表示恢复适配器默认。
  */

@@ -26,16 +26,44 @@ describe('reasoning configuration', () => {
     expect(rows[1]).toMatchObject({ modelId: 'gpt-6', source: 'override', efforts: false })
   })
 
-  it('writes model overrides instead of replacing the model array', () => {
-    const row = listReasoningModels({ providers: { codex: { models: [{ id: 'gpt-5' }] } } })[0]!
-    expect(reasoningMutation(row, false)).toEqual({
+  it('writes declared models as a preserved array', () => {
+    const rows = listReasoningModels({
+      providers: {
+        'codex-car': {
+          models: [
+            { id: 'gpt-4', name: 'GPT 4', contextWindow: 128000 },
+            { id: 'gpt-5', name: 'GPT 5', contextWindow: 1000000, reasoningEfforts: false },
+          ],
+        },
+      },
+    })
+    const row = rows.find(item => item.modelId === 'gpt-5')!
+    expect(reasoningMutation(row, codexReasoningTemplate())).toEqual({
       op: 'set',
-      path: ['providers', 'codex', 'modelOverrides', 'gpt-5', 'reasoningEfforts'],
-      value: false,
+      path: ['providers', 'codex-car', 'models'],
+      value: [
+        { id: 'gpt-4', name: 'GPT 4', contextWindow: 128000 },
+        { id: 'gpt-5', name: 'GPT 5', contextWindow: 1000000, reasoningEfforts: codexReasoningTemplate() },
+      ],
     })
     expect(reasoningMutation(row, undefined)).toEqual({
-      op: 'unset',
+      op: 'set',
+      path: ['providers', 'codex-car', 'models'],
+      value: [
+        { id: 'gpt-4', name: 'GPT 4', contextWindow: 128000 },
+        { id: 'gpt-5', name: 'GPT 5', contextWindow: 1000000 },
+      ],
+    })
+  })
+
+  it('keeps catalog-only entries in modelOverrides', () => {
+    const row = listReasoningModels({
+      providers: { codex: { modelOverrides: { 'gpt-5': { reasoningEfforts: false } } } },
+    })[0]!
+    expect(reasoningMutation(row, codexReasoningTemplate())).toEqual({
+      op: 'set',
       path: ['providers', 'codex', 'modelOverrides', 'gpt-5', 'reasoningEfforts'],
+      value: codexReasoningTemplate(),
     })
   })
 

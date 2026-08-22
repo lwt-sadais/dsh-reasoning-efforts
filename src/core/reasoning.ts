@@ -35,6 +35,7 @@ export interface ReasoningModelRow {
   readonly modelName: string
   readonly source: 'model' | 'override'
   readonly modelIndex?: number
+  readonly models?: readonly ModelProfile[]
   readonly efforts?: ReasoningEfforts
 }
 
@@ -67,8 +68,9 @@ export function listReasoningModels(section: PiAiSection | undefined): Reasoning
   for (const [providerId, profile] of Object.entries(providers)) {
     const providerName = profile.displayName?.trim() || providerId
     const seen = new Set<string>()
+    const models = profile.models ?? []
 
-    for (const [modelIndex, model] of (profile.models ?? []).entries()) {
+    for (const [modelIndex, model] of models.entries()) {
       if (!model.id || seen.has(model.id)) continue
       seen.add(model.id)
       const override = profile.modelOverrides?.[model.id]
@@ -79,6 +81,7 @@ export function listReasoningModels(section: PiAiSection | undefined): Reasoning
         modelName: override?.name?.trim() || model.name?.trim() || model.id,
         source: 'model',
         modelIndex,
+        models,
         ...(override?.reasoningEfforts !== undefined
           ? { efforts: override.reasoningEfforts }
           : model.reasoningEfforts !== undefined
@@ -106,7 +109,7 @@ export function listReasoningModels(section: PiAiSection | undefined): Reasoning
 }
 
 /**
- * 生成仅覆盖模型推理能力的路径操作，避免复制整个模型目录。
+ * 生成模型推理能力的最小安全写入；声明模型需整体保留并写回 `models` 数组。
  * @param row 要修改的模型。
  * @param efforts 新配置；`undefined` 表示恢复适配器默认。
  */
@@ -114,6 +117,17 @@ export function reasoningMutation(
   row: ReasoningModelRow,
   efforts: ReasoningEfforts | undefined,
 ): SettingsPathOperation {
+  if (row.source === 'model') {
+    if (row.modelIndex === undefined || row.models === undefined) {
+      throw new Error(`声明模型 ${row.providerId}/${row.modelId} 缺少目录位置`)
+    }
+    const models = row.models.map((model, index) => {
+      if (index !== row.modelIndex) return model
+      const { reasoningEfforts: _current, ...rest } = model
+      return efforts === undefined ? rest : { ...rest, reasoningEfforts: efforts }
+    })
+    return { op: 'set', path: ['providers', row.providerId, 'models'], value: models }
+  }
   const path = ['providers', row.providerId, 'modelOverrides', row.modelId, 'reasoningEfforts']
   return efforts === undefined ? { op: 'unset', path } : { op: 'set', path, value: efforts }
 }

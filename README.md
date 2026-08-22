@@ -10,7 +10,7 @@
 - 支持自定义每个 DSH 等级实际发送给接口的值。
 - 支持标记模型不支持推理，以及恢复适配器默认能力。
 - 通过 `settings.describe` 与 `settings.mutate` 写入配置，使用 revision 防止覆盖并发修改。
-- 始终写入 `providers.<provider>.modelOverrides.<model>.reasoningEfforts`，不会复制或替换模型目录。
+- 已在 `models` 中声明的模型会原位更新对应条目；仅由安装目录提供的模型才写入 `modelOverrides`，不会复制或替换模型目录。
 
 ## 安装
 
