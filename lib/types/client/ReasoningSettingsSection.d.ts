@@ -5,29 +5,23 @@ interface SettingsNamespaceView {
     readonly value: unknown;
     readonly revision: number;
 }
-interface ApiResult<T> {
-    readonly result: {
-        readonly ok: true;
-        readonly value: T;
-    } | {
-        readonly ok: false;
-        readonly error: {
-            readonly code: string;
-            readonly message: string;
-        };
+type RemoteResult<T> = {
+    readonly ok: true;
+    readonly value: T;
+} | {
+    readonly ok: false;
+    readonly error: {
+        readonly code: string;
+        readonly message: string;
     };
-}
+};
 interface SettingsApi {
     readonly settings: {
-        describe(request: Record<string, never>): Promise<ApiResult<{
+        describe(): Promise<RemoteResult<{
             readonly writable: boolean;
             readonly namespaces: readonly SettingsNamespaceView[];
         }>>;
-        mutate(request: {
-            readonly ns: string;
-            readonly ops: readonly SettingsPathOperation[];
-            readonly expectedRevision: number;
-        }): Promise<ApiResult<SettingsNamespaceView>>;
+        mutate(ns: string, ops: readonly SettingsPathOperation[], expectedRevision: number): Promise<RemoteResult<SettingsNamespaceView>>;
     };
 }
 type Translator = PropsLocale<'settings.reasoningEfforts'>['t'];

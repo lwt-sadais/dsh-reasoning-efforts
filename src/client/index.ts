@@ -14,7 +14,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-export const inject = ['slots', 'locale', 'connection', 'remote']
+export const inject = ['slots', 'locale', 'remote', 'remote.settings']
 const NS = 'settings.reasoningEfforts'
 
 /** 注册推理等级设置页、词典和配置更新监听。 */
@@ -28,9 +28,8 @@ export function apply(ctx: ClientContext): void {
   }, 'dsh-reasoning-efforts: styles')
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-reasoning-efforts: dictionaries')
 
-  const connection = ctx.get('connection')
   const t = ctx.locale.bind(NS)
-  const injected = () => ({ api: connection.api, t })
+  const injected = () => ({ api: { settings: ctx.remote.settings }, t })
 
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',

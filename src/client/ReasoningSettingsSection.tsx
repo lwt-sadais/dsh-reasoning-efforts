@@ -20,14 +20,14 @@ interface SettingsNamespaceView {
   readonly revision: number
 }
 
-interface ApiResult<T> {
-  readonly result: { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: { readonly code: string; readonly message: string } }
-}
+type RemoteResult<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: { readonly code: string; readonly message: string } }
 
 interface SettingsApi {
   readonly settings: {
-    describe(request: Record<string, never>): Promise<ApiResult<{ readonly writable: boolean; readonly namespaces: readonly SettingsNamespaceView[] }>>
-    mutate(request: { readonly ns: string; readonly ops: readonly SettingsPathOperation[]; readonly expectedRevision: number }): Promise<ApiResult<SettingsNamespaceView>>
+    describe(): Promise<RemoteResult<{ readonly writable: boolean; readonly namespaces: readonly SettingsNamespaceView[] }>>
+    mutate(ns: string, ops: readonly SettingsPathOperation[], expectedRevision: number): Promise<RemoteResult<SettingsNamespaceView>>
   }
 }
 
@@ -82,12 +82,12 @@ export function ReasoningSettingsSection({ api, t }: ReasoningSettingsSectionPro
   const load = useCallback(async () => {
     setFailure(null)
     try {
-      const response = await api.settings.describe({})
-      if (!response.result.ok) throw new Error(response.result.error.message)
-      const namespace = response.result.value.namespaces.find(item => item.ns === 'llm-pi-ai')
+      const response = await api.settings.describe()
+      if (!response.ok) throw new Error(response.error.message)
+      const namespace = response.value.namespaces.find(item => item.ns === 'llm-pi-ai')
       if (!namespace) throw new Error('llm-pi-ai namespace is unavailable')
       setSnapshot({
-        writable: response.result.value.writable,
+        writable: response.value.writable,
         revision: namespace.revision,
         rows: listReasoningModels(namespace.value as PiAiSection),
       })
@@ -114,13 +114,13 @@ export function ReasoningSettingsSection({ api, t }: ReasoningSettingsSectionPro
     setSaving(true)
     setFailure(null)
     try {
-      const response = await api.settings.mutate({
-        ns: 'llm-pi-ai',
-        ops: [reasoningMutation(selected, efforts)],
-        expectedRevision: snapshot.revision,
-      })
-      if (!response.result.ok) {
-        throw new Error(response.result.error.code === 'settings-conflict' ? t('conflict') : response.result.error.message)
+      const response = await api.settings.mutate(
+        'llm-pi-ai',
+        [reasoningMutation(selected, efforts)],
+        snapshot.revision,
+      )
+      if (!response.ok) {
+        throw new Error(response.error.code === 'settings-conflict' ? t('conflict') : response.error.message)
       }
       setSelected(null)
       setNotice(t('saved', { model: selected.modelName }))
