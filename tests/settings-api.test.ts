@@ -12,7 +12,9 @@ describe('alpha.1 settings Remote integration', () => {
   it('uses alpha.1 describe and mutate call signatures without a nested result envelope', async () => {
     const source = await readFile(new URL('../src/client/ReasoningSettingsSection.tsx', import.meta.url), 'utf8')
     expect(source).toContain('api.settings.describe()')
-    expect(source).toMatch(/api\.settings\.mutate\(\s*'llm-pi-ai',\s*\[reasoningMutation\(selected, efforts\)\],\s*snapshot\.revision,/u)
+    expect(source).toMatch(/api\.settings\.mutate\(\s*'llm-pi-ai',\s*modelCapabilityMutations\(selected,[\s\S]*?inputFromMode\(draft\.inputMode, selected\.input\)\),\s*snapshot\.revision,/u)
+    expect(source).toContain('savingRef.current')
+    expect(source).toContain('if (!selected || !snapshot || savingRef.current) return')
     expect(source).not.toContain('response.result')
   })
 })

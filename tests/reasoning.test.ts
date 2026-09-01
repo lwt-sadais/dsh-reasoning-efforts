@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   codexReasoningTemplate,
+  inputFromMode,
+  inputModeOf,
   listReasoningModels,
+  modelCapabilityMutations,
   normalizeReasoningEfforts,
   reasoningMutation,
 } from '../src/core/reasoning.js'
@@ -64,6 +67,81 @@ describe('reasoning configuration', () => {
       op: 'set',
       path: ['providers', 'codex', 'modelOverrides', 'gpt-5', 'reasoningEfforts'],
       value: codexReasoningTemplate(),
+    })
+  })
+
+  it('writes declared model reasoning and input in one preserved array', () => {
+    const row = listReasoningModels({
+      providers: {
+        codex: {
+          models: [
+            { id: 'gpt-4', contextWindow: 128000, input: ['text'] },
+            { id: 'gpt-5', contextWindow: 1000000, compat: { supportsStrictTools: true } },
+          ],
+        },
+      },
+    }).find(item => item.modelId === 'gpt-5')!
+
+    expect(modelCapabilityMutations(row, codexReasoningTemplate(), ['text', 'image'])).toEqual([{
+      op: 'set',
+      path: ['providers', 'codex', 'models'],
+      value: [
+        { id: 'gpt-4', contextWindow: 128000, input: ['text'] },
+        {
+          id: 'gpt-5',
+          contextWindow: 1000000,
+          compat: { supportsStrictTools: true },
+          input: ['text', 'image'],
+          reasoningEfforts: codexReasoningTemplate(),
+        },
+      ],
+    }])
+  })
+
+  it('writes catalog model capabilities as independent override fields', () => {
+    const row = listReasoningModels({
+      providers: {
+        codex: {
+          modelOverrides: {
+            'gpt-5': { input: ['text'], reasoningEfforts: false },
+          },
+        },
+      },
+    })[0]!
+
+    expect(modelCapabilityMutations(row, undefined, ['text', 'image'])).toEqual([
+      { op: 'unset', path: ['providers', 'codex', 'modelOverrides', 'gpt-5', 'reasoningEfforts'] },
+      { op: 'set', path: ['providers', 'codex', 'modelOverrides', 'gpt-5', 'input'], value: ['text', 'image'] },
+    ])
+  })
+
+  it('maps input modes without emitting an empty modality list', () => {
+    expect(inputFromMode('inherit')).toBeUndefined()
+    expect(inputFromMode('text')).toEqual(['text'])
+    expect(inputFromMode('text-image')).toEqual(['text', 'image'])
+    expect(inputModeOf(undefined)).toBe('inherit')
+    expect(inputModeOf(['text'])).toBe('text')
+    expect(inputModeOf(['text', 'image'])).toBe('text-image')
+    expect(inputModeOf(['image'])).toBe('custom')
+    expect(inputModeOf(['image', 'text'])).toBe('custom')
+    expect(inputFromMode('custom', ['image', 'text'])).toEqual(['image', 'text'])
+  })
+
+  it('preserves a custom legal input while only reasoning changes', () => {
+    const row = listReasoningModels({
+      providers: {
+        codex: {
+          models: [{ id: 'gpt-5', input: ['image', 'text'], reasoningEfforts: false }],
+        },
+      },
+    })[0]!
+
+    expect(modelCapabilityMutations(
+      row,
+      codexReasoningTemplate(),
+      inputFromMode(inputModeOf(row.input), row.input),
+    )[0]).toMatchObject({
+      value: [{ id: 'gpt-5', input: ['image', 'text'], reasoningEfforts: codexReasoningTemplate() }],
     })
   })
 

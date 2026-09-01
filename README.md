@@ -9,7 +9,8 @@
 - 提供 Codex 常用映射模板：`off / minimal / low / medium / high / xhigh`。
 - 支持自定义每个 DSH 等级实际发送给接口的值。
 - 支持标记模型不支持推理，以及恢复适配器默认能力。
-- 通过 `settings.describe` 与 `settings.mutate` 写入配置，使用 revision 防止覆盖并发修改。
+- 支持逐模型设置输入能力：继承默认、仅文本、文本与图片。
+- 推理等级与输入能力通过一次 `settings.mutate` 原子写入，使用 revision 防止覆盖并发修改。
 - 已在 `models` 中声明的模型会原位更新对应条目；仅由安装目录提供的模型才写入 `modelOverrides`，不会复制或替换模型目录。
 
 ## 安装
@@ -32,6 +33,7 @@ llm-pi-ai:
     codex:
       modelOverrides:
         gpt-5.6-sol:
+          input: [text, image]
           reasoningEfforts:
             off:
             minimal: low
@@ -41,7 +43,7 @@ llm-pi-ai:
             xhigh: xhigh
 ```
 
-键是 DSH 模型选择器显示的等级，值是 Provider 接口实际接收的字符串。只有 `off` 可以留空；其他已启用等级必须填写非空发送值。
+`reasoningEfforts` 的键是 DSH 模型选择器显示的等级，值是 Provider 接口实际接收的字符串。只有 `off` 可以留空；其他已启用等级必须填写非空发送值。`input` 仅写入 `[text]` 或 `[text, image]`；选择“继承默认”会删除模型级 `input` 字段。启用图片是能力声明，不会自动探测上游模型和接口。
 
 ## 开发
 

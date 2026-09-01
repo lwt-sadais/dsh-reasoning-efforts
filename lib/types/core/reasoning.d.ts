@@ -1,14 +1,19 @@
 export declare const THINKING_LEVELS: readonly ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 export type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 export type ReasoningEfforts = false | Partial<Record<ThinkingLevel, string | null>>;
+export type InputModality = 'text' | 'image';
+export type ModelInput = readonly InputModality[];
+export type InputMode = 'inherit' | 'text' | 'text-image' | 'custom';
 export interface ModelProfile {
     readonly id: string;
     readonly name?: string;
+    readonly input?: ModelInput;
     readonly reasoningEfforts?: ReasoningEfforts;
     readonly [key: string]: unknown;
 }
 export interface ModelOverride {
     readonly name?: string;
+    readonly input?: ModelInput;
     readonly reasoningEfforts?: ReasoningEfforts;
     readonly [key: string]: unknown;
 }
@@ -31,6 +36,7 @@ export interface ReasoningModelRow {
     readonly modelIndex?: number;
     readonly models?: readonly ModelProfile[];
     readonly efforts?: ReasoningEfforts;
+    readonly input?: ModelInput;
 }
 export interface SettingsPathOperation {
     readonly op: 'set' | 'unset';
@@ -45,7 +51,25 @@ export declare function codexReasoningTemplate(): Exclude<ReasoningEfforts, fals
  */
 export declare function listReasoningModels(section: PiAiSection | undefined): ReasoningModelRow[];
 /**
- * 生成模型推理能力的最小安全写入；声明模型需整体保留并写回 `models` 数组。
+ * 将输入模式转换为 DSH 模型配置；自定义历史值在未重选时原样保留。
+ * @param mode 表单选择的输入能力模式。
+ * @param current 当前模型显式输入能力，仅供自定义模式无损往返。
+ */
+export declare function inputFromMode(mode: InputMode, current?: ModelInput): ModelInput | undefined;
+/**
+ * 将模型配置转换为输入能力模式；合法但非标准组合标记为自定义并原样保留。
+ * @param input 模型当前显式输入能力。
+ */
+export declare function inputModeOf(input: ModelInput | undefined): InputMode;
+/**
+ * 生成模型推理等级与输入能力的原子安全写入。
+ * @param row 要修改的模型。
+ * @param efforts 新推理配置；`undefined` 表示恢复适配器默认。
+ * @param input 新输入能力；`undefined` 表示继承默认。
+ */
+export declare function modelCapabilityMutations(row: ReasoningModelRow, efforts: ReasoningEfforts | undefined, input: ModelInput | undefined): SettingsPathOperation[];
+/**
+ * 保留旧调用面的推理写入，用于兼容现有测试和外部导入。
  * @param row 要修改的模型。
  * @param efforts 新配置；`undefined` 表示恢复适配器默认。
  */

@@ -29,6 +29,6 @@ interface ReasoningSettingsSectionProps {
     readonly api: SettingsApi;
     readonly t: Translator;
 }
-/** 推理等级设置页，负责读取、编辑并以 revision 保护方式写回 llm-pi-ai。 */
-export declare function ReasoningSettingsSection({ api, t }: ReasoningSettingsSectionProps): import("react").JSX.Element;
+/** 推理等级设置页，负责读取、编辑并以 revision 保护方式原子写回模型能力。 */
+export declare function ReasoningSettingsSection({ api, t }: ReasoningSettingsSectionProps): import("react/jsx-runtime").JSX.Element;
 export {};
